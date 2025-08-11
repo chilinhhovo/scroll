@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NYC Elevator Complaints Duration Chart</title>
+  
+  <!-- Load Plotly.js from CDN -->
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  
+  <!-- Load D3.js from CDN -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f8f9fa;
+      color: #2c3e50;
+    }
+    
+    .container {
+      max-width: 100%;
+      margin: 0;
+      padding: 10px;
+    }
+    
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #2c3e50;
+      font-size: 2.5rem;
+      font-weight: 700;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+    }
+    
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #ecf0f1;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .error {
+      text-align: center;
+      padding: 40px 20px;
+      background-color: #fff5f5;
+      border: 1px solid #fed7d7;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    
+    .error button {
+      background-color: #e53e3e;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 15px;
+      font-size: 16px;
+    }
+    
+    .error button:hover {
+      background-color: #c53030;
+    }
+    
+    .chart-info {
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .chart-info p {
+      margin-bottom: 15px;
+      font-size: 16px;
+      color: #4a5568;
+    }
+    
+    .legend h3 {
+      margin-bottom: 10px;
+      font-size: 14px;
+      color: #2c3e50;
+    }
+    
+    .legend-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+      color: #4a5568;
+    }
+    
+    .color-box {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      margin-right: 8px;
+      border: 1px solid #ddd;
+    }
+    
+    .chart-container {
+      background-color: white;
+      border-radius: 0;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: none;
+      overflow: visible;
+    }
+    
+    .plotly-chart {
+      width: 100%;
+      height: calc(100vh - 100px);
+      min-height: 600px;
+      overflow: visible;
+    }
+    
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+    
+    .stat-card {
+      background-color: white;
+      padding: 25px;
+      border-radius: 8px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: transform 0.2s ease;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-2px);
+    }
+    
+    .stat-card h3 {
+      color: #4a5568;
+      font-size: 16px;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    
+    .stat-number {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #2c3e50;
+    }
+    
+    @media (max-width: 768px) {
+      .container {
+        padding: 15px;
+      }
+      
+      h1 {
+        font-size: 2rem;
+      }
+      
+      .stats {
+        grid-template-columns: 1fr;
+      }
+      
+      .plotly-chart {
+        height: 600px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>NYC Elevator Complaints Duration Analysis</h1>
+    
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <p>Loading elevator complaints data...</p>
+    </div>
+    
+    <div id="error" class="error" style="display: none;">
+      <h2>Error Loading Data</h2>
+      <p id="error-message"></p>
+      <button onclick="window.location.reload()">Retry</button>
+    </div>
+    
+    <div id="chart-content" style="display: none;">
+      <div class="chart-info">
+        <p id="chart-description"></p>
+        <div class="legend">
+          <h3>Borough Colors:</h3>
+                     <div class="legend-items">
+             <span class="legend-item"><span class="color-box" style="background-color: #FFB3B3;"></span> Bronx</span>
+             <span class="legend-item"><span class="color-box" style="background-color: #B3FFB3;"></span> Brooklyn</span>
+             <span class="legend-item"><span class="color-box" style="background-color: #B3B3FF;"></span> Manhattan</span>
+             <span class="legend-item"><span class="color-box" style="background-color: #FFB3FF;"></span> Queens</span>
+             <span class="legend-item"><span class="color-box" style="background-color: #FFD9B3;"></span> Staten Island</span>
+           </div>
+        </div>
+      </div>
+      
+      <div class="chart-container">
+        <div id="chart" class="plotly-chart"></div>
+      </div>
+      
+      <div class="stats">
+        <div class="stat-card">
+          <h3>Total Complaints</h3>
+          <p class="stat-number" id="total-complaints">-</p>
+        </div>
+        <div class="stat-card">
+          <h3>Average Duration</h3>
+          <p class="stat-number" id="avg-duration">-</p>
+        </div>
+        <div class="stat-card">
+          <h3>Longest Wait</h3>
+          <p class="stat-number" id="longest-wait">-</p>
+        </div>
+        <div class="stat-card">
+          <h3>Most Affected Borough</h3>
+          <p class="stat-number" id="most-borough">-</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let chartData = [];
+    
+    // Parse duration string to hours
+    function parseDuration(durationStr) {
+      if (!durationStr || durationStr === '0:00:00') return 0;
+      
+      const parts = durationStr.split(':');
+      if (parts.length === 3) {
+        // Format: HH:MM:SS
+        const hours = parseInt(parts[0]) || 0;
+        const minutes = parseInt(parts[1]) || 0;
+        const seconds = parseInt(parts[2]) || 0;
+        return hours + (minutes / 60) + (seconds / 3600);
+      } else if (parts.length === 2) {
+        // Format: MM:SS
+        const minutes = parseInt(parts[0]) || 0;
+        const seconds = parseInt(parts[1]) || 0;
+        return (minutes / 60) + (seconds / 3600);
+      }
+      
+      return 0;
+    }
+    
+    // Load and process CSV data
+    async function loadData() {
+      try {
+        const response = await fetch('deduped_complaints_with_details - deduped_complaints_with_details.csv.csv');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const csvText = await response.text();
+        
+        // Parse CSV using D3
+        const parsedData = d3.csvParse(csvText);
+        
+        // Filter and process data
+        chartData = parsedData
+          .filter(row => row.duration && row.duration !== '0:00:00' && row['Created Date'] && row['Incident Address'])
+          .map(row => {
+            const duration = parseDuration(row.duration);
+            const createdDate = new Date(row['Created Date']);
+            const address = row['Incident Address'];
+            
+            return {
+              duration: duration,
+              createdDate: createdDate,
+              address: address,
+              borough: row.Borough || 'Unknown',
+              complaintType: row['Complaint Type'] || 'Unknown',
+              status: row.Status || 'Unknown'
+            };
+          })
+          .filter(row => row.duration > 0) // Only include valid durations
+          .sort((a, b) => b.duration - a.duration); // Sort by duration descending
+        
+        // Update description
+        document.getElementById('chart-description').textContent = 
+          `Showing ${chartData.length} elevator complaints with duration data. Hover over bars to see details.`;
+        
+        // Update statistics
+        updateStats();
+        
+        // Create chart
+        createChart();
+        
+        // Hide loading, show content
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('chart-content').style.display = 'block';
+        
+      } catch (err) {
+        console.error('Error loading data:', err);
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').style.display = 'block';
+        document.getElementById('error-message').textContent = 'Failed to load CSV data: ' + err.message;
+      }
+    }
+    
+    // Update statistics cards
+    function updateStats() {
+      if (chartData.length === 0) return;
+      
+      const totalComplaints = chartData.length;
+      const avgDuration = (chartData.reduce((sum, d) => sum + d.duration, 0) / totalComplaints).toFixed(1);
+      const longestWait = Math.max(...chartData.map(d => d.duration)).toFixed(1);
+      
+      // Calculate most affected borough
+      const boroughCounts = {};
+      chartData.forEach(d => {
+        boroughCounts[d.borough] = (boroughCounts[d.borough] || 0) + 1;
+      });
+      const mostBorough = Object.entries(boroughCounts).sort((a, b) => b[1] - a[1])[0][0];
+      
+      document.getElementById('total-complaints').textContent = totalComplaints;
+      document.getElementById('avg-duration').textContent = avgDuration + 'h';
+      document.getElementById('longest-wait').textContent = longestWait + 'h';
+      document.getElementById('most-borough').textContent = mostBorough;
+    }
+    
+         // Create Plotly chart
+     function createChart() {
+       if (chartData.length === 0) return;
+       
+                // Prepare data for Plotly - using dots with duration on Y-axis, random X positioning
+         const trace = {
+           x: chartData.map((d, i) => Math.random() * 100), // Random X positions, doesn't matter
+           y: chartData.map(d => d.duration),
+           type: 'scatter',
+           mode: 'markers',
+           marker: {
+             size: 8,
+             color: chartData.map(d => {
+               // Color by borough - soft pastel colors
+               const colors = {
+                 'BRONX': '#FFB3B3',        // Soft Pastel Red
+                 'BROOKLYN': '#B3FFB3',     // Soft Pastel Green
+                 'MANHATTAN': '#B3B3FF',    // Soft Pastel Blue
+                 'QUEENS': '#FFB3FF',       // Soft Pastel Pink
+                 'STATEN ISLAND': '#FFD9B3'  // Soft Pastel Peach
+               };
+               return colors[d.borough] || '#CCCCCC';
+             }),
+             line: {
+               color: '#2c3e50',
+               width: 1
+             },
+             opacity: 0.9
+           },
+         text: chartData.map(d => 
+           `Duration: ${d.duration.toFixed(1)} hours<br>` +
+           `Created: ${d.createdDate.toLocaleDateString()}<br>` +
+           `Address: ${d.address}<br>` +
+           `Borough: ${d.borough}`
+         ),
+         hoverinfo: 'text',
+         hovertemplate: 
+           '<b>%{text}</b><br>' +
+           '<extra></extra>'
+       };
+       
+       const layout = {
+         title: {
+           text: 'Elevator Complaint Resolution Duration by Address',
+           font: { size: 28, color: '#2c3e50' }
+         },
+         xaxis: {
+           title: 'Address (Random Position)',
+           titlefont: { size: 18, color: '#2c3e50' },
+           tickfont: { size: 10, color: '#2c3e50' },
+           gridcolor: '#ecf0f1',
+           showticklabels: false,
+           showgrid: false,
+           range: [0, 100]
+         },
+         yaxis: {
+           title: 'Duration (hours)',
+           titlefont: { size: 18, color: '#2c3e50' },
+           tickfont: { size: 14, color: '#2c3e50' },
+           gridcolor: '#ecf0f1'
+         },
+         plot_bgcolor: '#ffffff',
+         paper_bgcolor: '#ffffff',
+         margin: { l: 80, r: 50, t: 100, b: 80 },
+         height: window.innerHeight - 100,
+         width: window.innerWidth - 100,
+         showlegend: false,
+         hovermode: 'closest'
+       };
+       
+       const config = {
+         responsive: true,
+         displayModeBar: false,
+         displaylogo: false
+       };
+      
+      Plotly.newPlot('chart', [trace], layout, config);
+      
+      // Add click event for more details
+      document.getElementById('chart').on('plotly_click', function(data) {
+        const point = data.points[0];
+        const index = point.pointIndex;
+        const complaint = chartData[index];
+        
+        alert(
+          `Complaint Details:\n\n` +
+          `Address: ${complaint.address}\n` +
+          `Duration: ${complaint.duration.toFixed(1)} hours\n` +
+          `Created Date: ${complaint.createdDate.toLocaleDateString()}\n` +
+          `Borough: ${complaint.borough}\n` +
+          `Status: ${complaint.status}\n` +
+          `Type: ${complaint.complaintType}`
+        );
+      });
+    }
+    
+                  // Handle window resize to make chart responsive
+         window.addEventListener('resize', function() {
+           if (chartData.length > 0) {
+             Plotly.relayout('chart', {
+               height: window.innerHeight - 100,
+               width: window.innerWidth - 100
+             });
+           }
+         });
+     
+     // Start loading data when page loads
+     document.addEventListener('DOMContentLoaded', loadData);
+  </script>
+</body>
+</html>

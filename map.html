@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NYC Elevator Complaints Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
+    <style>
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: #f0f0f0; }
+        #map { width: 100vw; height: 100vh; }
+        .info-box { position: absolute; top: 10px; right: 10px; background: #fff; border: 2px solid #000; padding: 15px; z-index: 1000; max-width: 300px; }
+        .info-box h2 { margin: 0 0 10px 0; font-size: 1.2em; }
+        .complaint-dot { border-radius: 50%; background-color: #000; opacity: 0.6; border: 1px solid #fff; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="info-box">
+        <h2>5,454 Elevator Complaints</h2>
+        <p>This map displays every individual elevator complaint from the first half of 2025, scattered within their respective neighborhoods. The density of dots reveals the scale of the problem in different parts of the city.</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 1. Initialize Leaflet Map
+            const map = L.map('map').setView([40.7128, -74.0060], 10);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                maxZoom: 20
+            }).addTo(map);
+
+            // 2. Load and Display Shapefile
+            try {
+                const geojson = await shp('gis/nyed_25a1/nyed.shp');
+                L.geoJSON(geojson, { style: { color: "#ccc", weight: 1, fillOpacity: 0.1 } }).addTo(map);
+            } catch (error) {
+                console.error("Error loading shapefile:", error);
+            }
+
+            // 3. Embed Complaint Data Directly
+            const complaintData = [
+                { "City": "ARVERNE", "Number of complaints ": 17 }, { "City": "ASTORIA", "Number of complaints ": 34 }, 
+                { "City": "BAYSIDE", "Number of complaints ": 3 }, { "City": "BRONX", "Number of complaints ": 2084 }, 
+                { "City": "BROOKLYN", "Number of complaints ": 1206 }, { "City": "COLLEGE POINT", "Number of complaints ": 2 },
+                { "City": "CORONA", "Number of complaints ": 31 }, { "City": "EAST ELMHURST", "Number of complaints ": 3 }, 
+                { "City": "ELMHURST", "Number of complaints ": 67 }, { "City": "FAR ROCKAWAY", "Number of complaints ": 84 }, 
+                { "City": "FLUSHING", "Number of complaints ": 87 }, { "City": "FOREST HILLS", "Number of complaints ": 36 },
+                { "City": "FRESH MEADOWS", "Number of complaints ": 7 }, { "City": "HOLLIS", "Number of complaints ": 8 }, 
+                { "City": "HOWARD BEACH", "Number of complaints ": 2 }, { "City": "JACKSON HEIGHTS", "Number of complaints ": 74 }, 
+                { "City": "JAMAICA", "Number of complaints ": 125 }, { "City": "KEW GARDENS", "Number of complaints ": 8 },
+                { "City": "LITTLE NECK", "Number of complaints ": 1 }, { "City": "LONG ISLAND CITY", "Number of complaints ": 36 }, 
+                { "City": "MASPETH", "Number of complaints ": 2 }, { "City": "NEW YORK", "Number of complaints ": 1370 }, 
+                { "City": "OAKLAND GARDENS", "Number of complaints ": 1 }, { "City": "QUEENS VILLAGE", "Number of complaints ": 1 },
+                { "City": "REGO PARK", "Number of complaints ": 64 }, { "City": "RICHMOND HILL", "Number of complaints ": 7 }, 
+                { "City": "RIDGEWOOD", "Number of complaints ": 5 }, { "City": "SOUTH OZONE PARK", "Number of complaints ": 2 }, 
+                { "City": "STATEN ISLAND", "Number of complaints ": 32 }, { "City": "SUNNYSIDE", "Number of complaints ": 21 },
+                { "City": "WHITESTONE", "Number of complaints ": 5 }, { "City": "WOODSIDE", "Number of complaints ": 29 }
+            ];
+
+            const cityCoordinates = {
+                "ARVERNE": { "lat": 40.5928, "lng": -73.7939, "scatter": 0.02 }, "ASTORIA": { "lat": 40.7707, "lng": -73.9196, "scatter": 0.02 },
+                "BAYSIDE": { "lat": 40.7684, "lng": -73.7694, "scatter": 0.01 }, "BRONX": { "lat": 40.8448, "lng": -73.8648, "scatter": 0.08 },
+                "BROOKLYN": { "lat": 40.6782, "lng": -73.9442, "scatter": 0.09 }, "COLLEGE POINT": { "lat": 40.7868, "lng": -73.8462, "scatter": 0.01 },
+                "CORONA": { "lat": 40.7498, "lng": -73.8621, "scatter": 0.015 }, "EAST ELMHURST": { "lat": 40.7621, "lng": -73.8691, "scatter": 0.01 },
+                "ELMHURST": { "lat": 40.7362, "lng": -73.8773, "scatter": 0.015 }, "FAR ROCKAWAY": { "lat": 40.6032, "lng": -73.7554, "scatter": 0.02 },
+                "FLUSHING": { "lat": 40.7673, "lng": -73.8370, "scatter": 0.02 }, "FOREST HILLS": { "lat": 40.7214, "lng": -73.8447, "scatter": 0.015 },
+                "FRESH MEADOWS": { "lat": 40.7317, "lng": -73.7858, "scatter": 0.01 }, "HOLLIS": { "lat": 40.7123, "lng": -73.7631, "scatter": 0.01 },
+                "HOWARD BEACH": { "lat": 40.6565, "lng": -73.8434, "scatter": 0.01 }, "JACKSON HEIGHTS": { "lat": 40.7556, "lng": -73.8830, "scatter": 0.015 },
+                "JAMAICA": { "lat": 40.7022, "lng": -73.7949, "scatter": 0.025 }, "KEW GARDENS": { "lat": 40.7147, "lng": -73.8314, "scatter": 0.01 },
+                "LITTLE NECK": { "lat": 40.7631, "lng": -73.7361, "scatter": 0.01 }, "LONG ISLAND CITY": { "lat": 40.7505, "lng": -73.9428, "scatter": 0.02 },
+                "MASPETH": { "lat": 40.7267, "lng": -73.9176, "scatter": 0.01 }, "NEW YORK": { "lat": 40.7831, "lng": -73.9712, "scatter": 0.09 },
+                "OAKLAND GARDENS": { "lat": 40.7495, "lng": -73.7607, "scatter": 0.01 }, "QUEENS VILLAGE": { "lat": 40.7280, "lng": -73.7436, "scatter": 0.01 },
+                "REGO PARK": { "lat": 40.7263, "lng": -73.8515, "scatter": 0.015 }, "RICHMOND HILL": { "lat": 40.6970, "lng": -73.8312, "scatter": 0.01 },
+                "RIDGEWOOD": { "lat": 40.7006, "lng": -73.9026, "scatter": 0.01 }, "SOUTH OZONE PARK": { "lat": 40.6758, "lng": -73.8158, "scatter": 0.01 },
+                "STATEN ISLAND": { "lat": 40.5795, "lng": -74.1502, "scatter": 0.05 }, "SUNNYSIDE": { "lat": 40.7434, "lng": -73.9262, "scatter": 0.015 },
+                "WHITESTONE": { "lat": 40.7947, "lng": -73.8097, "scatter": 0.015 }, "WOODSIDE": { "lat": 40.7453, "lng": -73.9048, "scatter": 0.015 }
+            };
+
+            // 4. Plot Individual Complaints
+            complaintData.forEach(d => {
+                const cityConfig = cityCoordinates[d.City];
+                const complaints = d["Number of complaints "]; // Correctly reference the key with trailing space
+                if (cityConfig && complaints) {
+                    for (let i = 0; i < complaints; i++) {
+                        const latOffset = (Math.random() - 0.5) * cityConfig.scatter;
+                        const lngOffset = (Math.random() - 0.5) * cityConfig.scatter;
+                        
+                        L.circleMarker([cityConfig.lat + latOffset, cityConfig.lng + lngOffset], {
+                            className: 'complaint-dot',
+                            radius: 3,
+                            fillOpacity: 0.6,
+                            weight: 0,
+                            color: '#0000FF', // Changed to blue for visibility
+                            fillColor: '#0000FF'
+                        }).addTo(map);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

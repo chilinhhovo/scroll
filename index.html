@@ -1,0 +1,1773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three Weeks, No Lift - NYC's Elevator Crisis</title>
+    
+    <!-- Load Plotly.js and D3.js for the interactive chart -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #000;
+            background: #fff;
+        }
+
+        .story-container {
+            position: relative;
+            width: 100%;
+        }
+
+        /* Building visualization canvas - full screen */
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #fff;
+            z-index: 1;
+        }
+
+        /* Story sections */
+        .story-section {
+            position: relative;
+            z-index: 10;
+            min-height: 120vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 20px;
+        }
+
+        .story-content {
+            max-width: 900px;
+            background: transparent;
+            padding: 20px 40px;
+            margin: 15px auto;
+            line-height: 1.8;
+        }
+
+        .story-content h1 {
+            font-size: 3.2em;
+            margin-bottom: 15px;
+            color: #000;
+            font-weight: bold;
+            line-height: 1.2;
+            text-align: left;
+            margin-top: -200px;
+        }
+
+        .story-content h2 {
+            font-size: 2.4em;
+            margin-bottom: 25px;
+            color: #000;
+            font-weight: bold;
+            line-height: 1.3;
+        }
+
+        .story-content h3 {
+            font-size: 1.6em;
+            margin-bottom: 20px;
+            color: #000;
+            font-weight: bold;
+        }
+
+        .story-content p {
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            text-align: justify;
+            max-width: 700px;
+            line-height: 1.6;
+            word-wrap: break-word;
+            hyphens: none;
+        }
+
+        .story-content a {
+            color: #000;
+            text-decoration: underline;
+            font-weight: 500;
+        }
+
+        .story-content a:hover {
+            color: #333;
+            text-decoration: none;
+        }
+
+        .scrolly-box {
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid #000;
+            padding: 20px;
+            margin: 25px auto;
+            max-width: 600px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 20;
+        }
+
+        .scrolly-box p {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin: 0;
+            text-align: center;
+        }
+        
+        #complaints-chart {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            margin: 0 auto;
+        }
+
+        .story-content .lead {
+            font-size: 1.4em;
+            font-weight: 500;
+            color: #000;
+            margin-bottom: 20px;
+            text-align: left;
+            line-height: 1.4;
+        }
+
+        .story-content .byline {
+            font-size: 1.0em;
+            color: #666;
+            text-align: left;
+            margin-bottom: 20px;
+            font-style: italic;
+        }
+
+        .story-content .quote {
+            font-size: 1.4em;
+            font-style: italic;
+            color: #000;
+            margin: 50px 0;
+            padding: 30px;
+            line-height: 1.6;
+        }
+
+        .story-content .stat-highlight {
+            background: transparent;
+            color: #000;
+            padding: 40px;
+            text-align: center;
+            margin: 50px 0;
+            font-weight: bold;
+        }
+
+        .story-content .stat-highlight .big-number {
+            font-size: 5em;
+            display: block;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .story-content .building-details {
+            background: #f8f8f8;
+            border: 2px solid #000;
+            padding: 30px;
+            margin: 30px 0;
+            border-radius: 0;
+        }
+
+        .story-content .building-details p {
+            margin-bottom: 15px;
+            font-size: 1.0em;
+            line-height: 1.5;
+        }
+
+        .story-content .building-details .quote {
+            font-style: italic;
+            margin-bottom: 15px;
+        }
+
+        .story-content .building-details .stats {
+            margin-bottom: 15px;
+        }
+
+        .story-content .building-details a {
+            color: #0066cc;
+            text-decoration: underline;
+        }
+
+        .story-content .building-details a:hover {
+            color: #004499;
+        }
+
+        .story-content .impact-section {
+            padding: 20px 40px;
+            margin: 10px auto;
+        }
+
+        .story-content .impact-section h2 {
+            font-size: 1.6em;
+            line-height: 1.3;
+            margin-bottom: 15px;
+        }
+
+        .story-content .impact-section p {
+            margin-bottom: 15px;
+        }
+
+        .story-content .economics-section h2 {
+            font-size: 1.6em;
+            line-height: 1.3;
+        }
+
+        .story-content .chart-section h2 {
+            font-size: 1.8em;
+            line-height: 1.3;
+            margin-bottom: 30px;
+        }
+
+        .story-content .chart-section p {
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }
+
+        .story-content .conclusion-section h2 {
+            font-size: 1.6em;
+            line-height: 1.3;
+        }
+
+        .story-content .conclusion-section .quote {
+            font-weight: normal;
+        }
+
+        .story-content .conclusion-section .highlight-text {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.8em;
+            margin-top: 60px;
+            margin-bottom: 100px;
+            line-height: 1.4;
+        }
+
+        /* Transparent sections for data reveals */
+        .data-reveal {
+            background: transparent !important;
+            text-align: center;
+        }
+
+        .data-reveal h2 {
+            background: transparent;
+            padding: 20px;
+            display: inline-block;
+        }
+
+
+
+        /* Final section styling */
+        .conclusion {
+            background: transparent;
+            color: #000;
+        }
+
+        .conclusion h2 {
+            color: #000;
+        }
+
+
+
+
+
+
+        
+
+        @media (max-width: 768px) {
+            .story-content {
+                padding: 30px 20px;
+                margin: 0 10px;
+            }
+            
+            .story-content h1 {
+                font-size: 2em;
+            }
+            
+            .story-content h2 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    
+    
+    <!-- Full screen building visualization background -->
+    <canvas id="canvas"></canvas>
+    
+    <div class="story-container">
+                <!-- Section 1: Title -->
+        <section class="story-section" data-section="title">
+            <div class="story-content">
+                <h1 style="font-size: 2.4em; line-height: 1.2;">Three Weeks, No Lift</h1>
+                <div class="lead">NYC Elevator Repairs Leave Tenants Stranded in Rent-Stabilized Buildings</div>
+                <div class="byline">By Chi Vo</div>
+                <p>It takes 21 days on an average for New York landlords to fix a broken elevator. In rent-stabilized buildings, the wait is often much longer. Some outages stretch beyond 150 days.</p>
+            </div>
+        </section>
+
+
+        <!-- Extended spacer for longer building visualization -->
+        <section class="story-section" data-section="spacer1" style="min-height: 80vh;">
+            <div class="story-content" style="display: flex; align-items: center; justify-content: center;">
+                <div style="text-align: center; opacity: 0.3; font-size: 1.1em; color: #999;">
+            </div>
+        </section>
+
+        <!-- Additional spacer to extend the building view -->
+        <section class="story-section" data-section="spacer1b" style="min-height: 60vh;">
+            <div class="story-content" style="display: flex; align-items: center; justify-content: center;">
+                <div style="text-align: center; opacity: 0.4; font-size: 1.1em; color: #999;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 5: Bronx Building Zoom -->
+                <section class="story-section" data-section="bronx-zoom" style="min-height: 80vh;">
+        </section>
+
+        <!-- Section 7: Zoom Back to Chart -->
+        <section class="story-section" data-section="zoom-back" style="min-height: 200vh;">
+            <div class="story-content" style="display: flex; align-items: flex-start; justify-content: flex-start;">
+                <!-- Building visualization area (left side) -->
+                <div style="width: 400px; height: 600px; margin-right: 50px;">
+                    
+                    
+                </div>
+                
+                <!-- Building details (right side) -->
+                <div class="building-details" id="building-details" style="opacity: 1; margin-top: 0; display: inline-block; vertical-align: top;">
+                    <p>In January, at 764 East 152nd Street in the Bronx, seven floors high and 24 residential apartments, tenants waited 146 days for repairs. The building has only one elevator.</p>
+                    <p>"There's only one elevator. When it's broken, that's it," said Iris Figueras, 48, a tenant in apartment 3C and an office manager for State Assembly member Michael Benedetto in District 82.</p>
+                    <p class="stats">More than 4,800 elevator complaints came from rent-stabilized buildings in the first half of 2025. That is more than half of all elevator-related complaints citywide, even though <a href="https://www.nytimes.com/article/rent-stabilized-apartments-nyc.html" target="_blank">rent-stabilized units make up just 28 percent of the housing stock</a>.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 8: The Human Cost -->
+        <section class="story-section" data-section="impact" style="min-height: 80vh;">
+            <div class="story-content impact-section">
+                <h2>Trapped in Their Homes</h2>
+                <p>"It's very traumatizing. Without an elevator, they are trapped." said Karla Fisk, Inwood resident</p>
+                <p>Many of these buildings do not have backup systems or temporary help for tenants who cannot climb stairs. Elderly and disabled residents are often left stranded.</p>
+                <p>Rent-stabilization limits rent increases to keep apartments affordable. But it also means landlords collect below-market rents.</p>
+            </div>
+        </section>
+
+        <!-- Section 6: The Economics -->
+        <section class="story-section" data-section="economics" style="min-height: 80vh;">
+            <div class="story-content economics-section">
+                <h2>The Money Problem</h2>
+                <div class="stat-highlight">
+                    <span class="big-number">3x</span>
+                    Higher repair costs in US vs Europe
+                </div>
+                <p>Rent-stabilization limits rent increases to keep apartments affordable. But it also means landlords collect below-market rents.</p>
+                <p> "They raise the rent when they want. But they don't fix anything." said Figueras said. “But they don’t fix anything.” said Iris Figueras, a resident of  764 East 152nd </p>
+                <p>Experts say repair delays are rooted in cost. Elevator maintenance is expensive, and the 2019 Housing Stability and Tenant Protection Act further limited rent increases.</p>
+                <p>Stephen Smith, executive director of the Center for Building, says high repair costs are baked into the system. “Prices charged in the U.S. and Canada are at least three times higher than in comparable mid-rise buildings in Europe,” he wrote in the Elevators report.</p>
+                <p>That gap shows in infrastructure. “The U.S. and Canada have fewer elevators per capita than any other high-income country for which data could be found.” Smith added.</p>
+                <p>Part of the problem is labor. “Everywhere throughout the developed world, the construction industry is reliant on immigrants.” Smith said in an email. “However, U.S. immigration policy does not provide much of a legal pathway for construction workers, relegating them to undocumented status.”</p>
+                <p>Smith warns that regulation alone won’t solve the crisis. “New York loves to solve housing problems with more requirements and fines,” he said. “But in rent-stabilized buildings, the money to pay those fines just isn’t there.”</p>
+                <p>Elevator outages are also common in public housing. Israel Villoda, 50, lives on the twelfth floor of a NYCHA building where breakdowns happen regularly. When the elevator failed during a recent visit, he waited in front of the building for hours. “There are a lot of old people here,” he said. “They just have to wait. There is nothing else they can do.”</p>
+            </div>
+        </section>
+
+        <!-- Section: Interactive Elevator Complaints Duration Chart -->
+        <section class="story-section" data-section="complaints-chart" style="min-height: 100vh;">
+            <div class="story-content chart-section">
+                <h2>How Long Do Tenants Wait?</h2>
+                <p>Explore the duration of elevator complaint resolution across NYC. Each dot represents a complaint, positioned by how long it took to resolve. Hover over dots to see details.</p>
+                
+
+                
+                <div id="complaints-chart" style="width: 1200px; height: 600px; margin: 0 auto; position: relative;"></div>
+                
+
+            </div>
+        </section>
+
+
+
+        <!-- Section 8: Conclusion -->
+        <section class="story-section conclusion" data-section="conclusion" style="min-height: 40vh;">
+            <div class="story-content conclusion-section">
+                <h2>The Path Forward</h2>
+                <p>As vertical living becomes the norm, the city needs a more reliable system for tracking outages, enforcing repair timelines, and protecting tenants from being trapped in their own homes.</p>
+                <p>Rent-stabilization is meant to protect tenants from runaway rent hikes. But if the buildings are unsafe and unlivable, the policy fails at its most basic task.</p>
+                <p>"I do this for a living. But our landlords just don't care." said Iris Figuera</p>
+                <p>Housing isn't affordable if tenants can't live in it.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Real CSV data from the complaints file
+        const complaintData = [
+            {city: "ARVERNE", complaints: 17, borough: "Queens", lat: 40.5928, lng: -73.7939, rentStabilized: true},
+            {city: "ASTORIA", complaints: 34, borough: "Queens", lat: 40.7707, lng: -73.9196, rentStabilized: true},
+            {city: "BAYSIDE", complaints: 3, borough: "Queens", lat: 40.7684, lng: -73.7694, rentStabilized: true},
+            {city: "BRONX", complaints: 2084, borough: "Bronx", lat: 40.8448, lng: -73.8648, rentStabilized: true},
+            {city: "BROOKLYN", complaints: 1206, borough: "Brooklyn", lat: 40.6782, lng: -73.9442, rentStabilized: true},
+            {city: "COLLEGE POINT", complaints: 2, borough: "Queens", lat: 40.7868, lng: -73.8462, rentStabilized: true},
+            {city: "CORONA", complaints: 31, borough: "Queens", lat: 40.7498, lng: -73.8621, rentStabilized: true},
+            {city: "EAST ELMHURST", complaints: 3, borough: "Queens", lat: 40.7621, lng: -73.8691, rentStabilized: true},
+            {city: "ELMHURST", complaints: 67, borough: "Queens", lat: 40.7362, lng: -73.8773, rentStabilized: true},
+            {city: "FAR ROCKAWAY", complaints: 84, borough: "Queens", lat: 40.6032, lng: -73.7554, rentStabilized: true},
+            {city: "FLUSHING", complaints: 87, borough: "Queens", lat: 40.7673, lng: -73.8370, rentStabilized: true},
+            {city: "FOREST HILLS", complaints: 36, borough: "Queens", lat: 40.7214, lng: -73.8447, rentStabilized: true},
+            {city: "FRESH MEADOWS", complaints: 7, borough: "Queens", lat: 40.7317, lng: -73.7858, rentStabilized: true},
+            {city: "HOLLIS", complaints: 8, borough: "Queens", lat: 40.7123, lng: -73.7631, rentStabilized: true},
+            {city: "HOWARD BEACH", complaints: 2, borough: "Queens", lat: 40.6565, lng: -73.8434, rentStabilized: true},
+            {city: "JACKSON HEIGHTS", complaints: 74, borough: "Queens", lat: 40.7556, lng: -73.8830, rentStabilized: true},
+            {city: "JAMAICA", complaints: 125, borough: "Queens", lat: 40.7022, lng: -73.7949, rentStabilized: true},
+            {city: "KEW GARDENS", complaints: 8, borough: "Queens", lat: 40.7147, lng: -73.8314, rentStabilized: true},
+            {city: "LITTLE NECK", complaints: 1, borough: "Queens", lat: 40.7631, lng: -73.7361, rentStabilized: true},
+            {city: "LONG ISLAND CITY", complaints: 36, borough: "Queens", lat: 40.7505, lng: -73.9428, rentStabilized: true},
+            {city: "MASPETH", complaints: 2, borough: "Queens", lat: 40.7267, lng: -73.9176, rentStabilized: true},
+            {city: "MANHATTAN", complaints: 1370, borough: "Manhattan", lat: 40.7831, lng: -73.9712, rentStabilized: true},
+            {city: "OAKLAND GARDENS", complaints: 1, borough: "Queens", lat: 40.7495, lng: -73.7607, rentStabilized: true},
+            {city: "QUEENS VILLAGE", complaints: 1, borough: "Queens", lat: 40.7280, lng: -73.7436, rentStabilized: true},
+            {city: "REGO PARK", complaints: 64, borough: "Queens", lat: 40.7263, lng: -73.8515, rentStabilized: true},
+            {city: "RICHMOND HILL", complaints: 7, borough: "Queens", lat: 40.6970, lng: -73.8312, rentStabilized: true},
+            {city: "RIDGEWOOD", complaints: 5, borough: "Queens", lat: 40.7006, lng: -73.9026, rentStabilized: true},
+            {city: "SOUTH OZONE PARK", complaints: 2, borough: "Queens", lat: 40.6758, lng: -73.8158, rentStabilized: true},
+            {city: "STATEN ISLAND", complaints: 32, borough: "Staten Island", lat: 40.5795, lng: -74.1502, rentStabilized: false},
+            {city: "SUNNYSIDE", complaints: 21, borough: "Queens", lat: 40.7434, lng: -73.9262, rentStabilized: true},
+            {city: "WHITESTONE", complaints: 5, borough: "Queens", lat: 40.7947, lng: -73.8097, rentStabilized: true},
+            {city: "WOODSIDE", complaints: 29, borough: "Queens", lat: 40.7453, lng: -73.9048, rentStabilized: true}
+        ];
+
+
+
+        class ElevatorScrollytelling {
+            constructor() {
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                this.scrollPosition = 0;
+                this.currentSection = 'title';
+                this.buildings = [];
+                this.sections = ['title', 'bronx-case', 'spacer1', 'spacer1b', 'bronx-zoom', 'zoom-back', 'impact', 'spacer-impact-economics', 'economics', 'spacer-economics-chart', 'complaints-chart', 'conclusion'];
+                
+                this.setupCanvas();
+                this.generateBuildings();
+                this.bindEvents();
+                this.animate();
+            }
+
+            setupCanvas() {
+                // Canvas is now full screen
+                const dpr = window.devicePixelRatio || 1;
+                
+                this.width = window.innerWidth;
+                this.height = window.innerHeight;
+                
+                this.canvas.width = this.width * dpr;
+                this.canvas.height = this.height * dpr;
+                this.canvas.style.width = this.width + 'px';
+                this.canvas.style.height = this.height + 'px';
+                
+                this.ctx.scale(dpr, dpr);
+            }
+
+            generateBuildings() {
+                this.buildings = [];
+                
+                // Add margins on left and right
+                const leftMargin = 100;
+                const rightMargin = 100;
+                const availableWidth = this.width - leftMargin - rightMargin;
+                
+                complaintData.forEach((data, index) => {
+                    const maxHeight = this.height * 0.8; // Use more of full screen height
+                    const minHeight = 80;
+                    const baseHeight = 100;
+                    const dataHeight = minHeight + (data.complaints / 2084) * (maxHeight - minHeight);
+                    
+                    const buildingWidth = Math.max(25, availableWidth / complaintData.length - 6);
+                    
+                    const building = {
+                        x: leftMargin + (index * availableWidth / complaintData.length) + (availableWidth / complaintData.length / 2),
+                        y: this.height - 40, // Align with ground line
+                        width: buildingWidth,
+                        baseHeight: baseHeight,
+                        targetHeight: dataHeight,
+                        currentHeight: baseHeight,
+                        city: data.city,
+                        borough: data.borough,
+                        complaints: data.complaints,
+                        baseColor: '#fff',
+                        targetColor: '#fff',
+                        currentColor: '#fff',
+                        windows: this.generateWindows(buildingWidth, Math.max(baseHeight, dataHeight)),
+                        showLabel: false,
+                        opacity: 1.0
+                    };
+                    
+                    this.buildings.push(building);
+                });
+            }
+
+            generateWindows(buildingWidth, buildingHeight) {
+                const windows = [];
+                const windowWidth = Math.max(4, buildingWidth * 0.15);
+                const windowHeight = Math.max(6, buildingHeight * 0.03);
+                const spacing = Math.max(8, buildingWidth / 3);
+                
+                const cols = Math.max(1, Math.floor(buildingWidth / spacing) - 1);
+                const rows = Math.max(1, Math.floor(buildingHeight / (spacing * 0.8)) - 2);
+                
+                for (let row = 0; row < rows; row++) {
+                    for (let col = 0; col < cols; col++) {
+                        windows.push({
+                            x: col * spacing + spacing/2,
+                            y: row * spacing * 0.8 + spacing,
+                            width: windowWidth,
+                            height: windowHeight,
+                            lit: Math.random() > 0.4
+                        });
+                    }
+                }
+                
+                return windows;
+            }
+
+            // Removed old map setup - now using Leaflet integration
+
+            // Removed old renderMap function - now using Leaflet integration
+
+            getColorForComplaints(complaints) {
+                return '#fff'; // Always white for minimalistic design
+            }
+
+            bindEvents() {
+                window.addEventListener('scroll', () => {
+                    this.updateScrollPosition();
+                });
+
+                window.addEventListener('resize', () => {
+                    // Delay to ensure canvas dimensions are updated
+                    setTimeout(() => {
+                    this.setupCanvas();
+                    this.generateBuildings();
+                    }, 100);
+                });
+            }
+
+            updateScrollPosition() {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+                this.scrollPosition = Math.min(scrollTop / scrollHeight, 1);
+                
+                // Get all story sections for more precise section detection
+                const sections = document.querySelectorAll('.story-section');
+                let currentSection = 'title';
+                
+                // Find which section we're currently in based on viewport
+                const viewportMiddle = scrollTop + window.innerHeight / 2;
+                
+                sections.forEach(section => {
+                    const rect = section.getBoundingClientRect();
+                    const sectionTop = scrollTop + rect.top;
+                    const sectionBottom = sectionTop + rect.height;
+                    
+                    if (viewportMiddle >= sectionTop && viewportMiddle <= sectionBottom) {
+                        currentSection = section.getAttribute('data-section');
+                    }
+                });
+                
+                this.currentSection = currentSection;
+            }
+
+            animate() {
+                this.ctx.clearRect(0, 0, this.width, this.height);
+                
+                // Bronx zoom effect - handle separately with smooth transition
+                if (this.currentSection === 'bronx-zoom') {
+                    this.drawSmoothBronxZoom();
+                    requestAnimationFrame(() => this.animate());
+                    return;
+                }
+                
+                // Zoom back to chart effect
+                if (this.currentSection === 'zoom-back') {
+                    this.drawZoomBackToChart();
+                    requestAnimationFrame(() => this.animate());
+                    return;
+                }
+                
+                // Dynamic background based on section
+                this.drawBackground();
+                
+                // Animate buildings based on current section
+                this.animateBuildings();
+                
+                // Draw buildings
+                this.buildings.forEach(building => {
+                    this.drawBuilding(building);
+                });
+                
+                // Draw labels separately to avoid overlaps
+                this.drawLabels();
+                
+                // Draw ground line (only before impact section)
+                if (this.currentSection !== 'impact' && 
+                    !(this.sections.indexOf(this.currentSection) >= this.sections.indexOf('impact') && 
+                      this.sections.indexOf(this.currentSection) !== -1)) {
+                    this.ctx.strokeStyle = '#000';
+                    this.ctx.lineWidth = 1;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, this.height - 40);
+                    this.ctx.lineTo(this.width, this.height - 40);
+                    this.ctx.stroke();
+                }
+                
+                // Draw zoom boundary box during transition
+                this.drawZoomBoundary();
+                
+                requestAnimationFrame(() => this.animate());
+            }
+
+            drawBackground() {
+                // Simple white background for minimalistic design
+                this.ctx.fillStyle = '#fff';
+                this.ctx.fillRect(0, 0, this.width, this.height);
+            }
+
+            animateBuildings() {
+                // Hide buildings completely when we reach the "impact" section (Trapped in Their Homes)
+                if (this.currentSection === 'impact' || 
+                    (this.sections.indexOf(this.currentSection) >= this.sections.indexOf('impact') && 
+                     this.sections.indexOf(this.currentSection) !== -1)) {
+                    // Hide all buildings immediately
+                    this.buildings.forEach(building => {
+                        building.currentHeight = 0;
+                            building.showLabel = false;
+                        building.opacity = 0;
+                    });
+                    return;
+                }
+                
+                // Show buildings during title section and spacer sections
+                if (this.currentSection === 'title' || this.currentSection === 'spacer1' || this.currentSection === 'spacer1b') {
+                    // Buildings are visible and growing
+                }
+                
+                this.buildings.forEach((building, index) => {
+                    // Calculate progress based on scroll position through story sections
+                    let progress = 0;
+                    
+                    if (this.scrollPosition <= 0.25) {
+                        // First 25% of scroll: buildings grow from base to full height
+                        progress = Math.min(1, this.scrollPosition / 0.25);
+                    } else {
+                        // After 25%: buildings are fully grown (until impact section)
+                        // This allows buildings to stay visible much longer with the extended spacers
+                        progress = 1;
+                    }
+                    
+                    // Apply easing and calculate current height
+                    const easedProgress = this.easeOutCubic(progress);
+                    building.currentHeight = building.baseHeight + 
+                        (building.targetHeight - building.baseHeight) * easedProgress;
+                    
+                    // Show labels when buildings are at least 15% grown
+                    building.showLabel = progress > 0.15;
+                    
+                    // Full opacity throughout
+                    building.opacity = 1.0;
+                });
+            }
+            
+
+            
+            drawZoomBoundary() {
+                // Simple Bronx building display at bottom left
+                if (this.currentSection === 'bronx-zoom') {
+                    this.drawBronxBuildingBottomLeft();
+                }
+            }
+            
+            drawBronxBuildingBottomLeft() {
+                // Draw building at bottom left corner of the page - much bigger
+                const buildingWidth = 500; // Increased from 300
+                const buildingHeight = 800; // Increased from 500
+                const startX = 30; // Moved closer to left edge
+                const startY = this.height - buildingHeight - 30; // Moved closer to bottom edge
+                
+                // Building details (left aligned)
+                this.ctx.font = '16px Arial';
+                this.ctx.fillText('In January, at 764 East 152nd Street in the Bronx, seven floors high and 24 residential apartments, tenants waited 146 days for repairs. The building has only one elevator.', startX, 80);
+                
+                // Quote (left aligned)
+                this.ctx.font = 'italic 16px Arial';
+                this.ctx.fillText('"There\'s only one elevator. When it\'s broken, that\'s it," said Iris Figueras, 48, a tenant in apartment 3C and an office manager for State Assembly member Michael Benedetto in District 82.', startX, 130);
+                
+                // Main building outline (bottom left) - much bigger
+                this.ctx.strokeStyle = '#000';
+                this.ctx.lineWidth = 4; // Increased line width for bigger building
+                this.ctx.strokeRect(startX, startY, buildingWidth, buildingHeight);
+                
+                // Draw windows grid (6 rows x 5 columns as in reference) - scaled up
+                const windowSize = 60; // Increased from 35
+                const windowSpacing = 80; // Increased from 50
+                const startWindowX = startX + 40; // Adjusted for bigger building
+                const startWindowY = startY + 40; // Adjusted for bigger building
+                
+                for (let row = 0; row < 6; row++) {
+                    for (let col = 0; col < 5; col++) {
+                        const x = startWindowX + col * windowSpacing;
+                        const y = startWindowY + row * windowSpacing;
+                        
+                        // Window outline
+                        this.ctx.strokeStyle = '#000';
+                        this.ctx.lineWidth = 3; // Increased line width for bigger windows
+                        this.ctx.strokeRect(x, y, windowSize, windowSize);
+                        
+                        // Checkerboard pattern (alternating black and white)
+                        this.ctx.fillStyle = (row + col) % 2 === 0 ? '#000' : '#fff';
+                        this.ctx.fillRect(x, y, windowSize, windowSize);
+                    }
+                }
+                
+                // Bottom entrance rectangles - scaled up
+                const rectWidth = 120; // Increased from 80
+                const rectHeight = 80; // Increased from 60
+                const bottomY = startY + buildingHeight;
+                
+                // Left entrance rectangle
+                this.ctx.strokeRect(startX + 60, bottomY, rectWidth, rectHeight);
+                // Right entrance rectangle
+                this.ctx.strokeRect(startX + buildingWidth - rectWidth - 60, bottomY, rectWidth, rectHeight);
+                
+
+            }
+            
+            drawSmoothBronxZoom() {
+                // Calculate zoom progress based on scroll position within the bronx-zoom section
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const bronxSection = document.querySelector('[data-section="bronx-zoom"]');
+                const sectionRect = bronxSection.getBoundingClientRect();
+                const sectionTop = scrollTop + sectionRect.top;
+                const sectionHeight = bronxSection.offsetHeight;
+                const currentScroll = scrollTop - sectionTop;
+                const zoomProgress = Math.min(Math.max(currentScroll / (sectionHeight * 0.6), 0), 1); // Zoom happens in first 60% of section (much slower)
+                
+                // Clear canvas
+                this.ctx.clearRect(0, 0, this.width, this.height);
+                this.ctx.fillStyle = '#fff';
+                this.ctx.fillRect(0, 0, this.width, this.height);
+                
+                if (zoomProgress < 1) {
+                    // Phase 1: Zoom into Bronx building
+                    this.drawZoomIntoBronx(zoomProgress);
+                } else {
+                    // Phase 2: Keep building zoomed and add scroll effect
+                    this.drawZoomedBuildingWithScroll(currentScroll, sectionHeight);
+                }
+            }
+            
+            drawZoomBackToChart() {
+                // Calculate zoom back progress based on scroll position within the zoom-back section
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const zoomBackSection = document.querySelector('[data-section="zoom-back"]');
+                const sectionRect = zoomBackSection.getBoundingClientRect();
+                const sectionTop = scrollTop + sectionRect.top;
+                const sectionHeight = zoomBackSection.offsetHeight;
+                const currentScroll = scrollTop - sectionTop;
+                const zoomBackProgress = Math.min(Math.max(currentScroll / (sectionHeight * 0.3), 0), 1); // Zoom back happens in first 30% of section (faster)
+                
+                // Clear canvas
+                this.ctx.clearRect(0, 0, this.width, this.height);
+                this.ctx.fillStyle = '#fff';
+                this.ctx.fillRect(0, 0, this.width, this.height);
+                
+                // Reset building states for the full chart view
+                this.resetBuildingsForFullChart();
+                
+                if (zoomBackProgress < 1) {
+                    // Phase 1: Zoom back from Bronx building to full chart
+                    this.drawZoomBackFromBronx(zoomBackProgress);
+                } else {
+                    // Phase 2: Show full chart with Bronx highlighted
+                    this.drawFullChartWithBronxHighlight(currentScroll, sectionHeight);
+                }
+            }
+            
+            drawZoomBackFromBronx(progress) {
+                // Find Bronx building from the main chart
+                const bronxBuilding = this.buildings.find(b => b.city === 'BRONX');
+                if (!bronxBuilding) return;
+                
+                if (progress < 0.3) {
+                    // First 30%: Keep Bronx building zoomed
+                    this.drawZoomedBuildingWithScroll(0, 100);
+                } else {
+                    // After 30%: Immediately show full chart
+                    this.drawFullChartWithBronxHighlight(0, 100);
+                }
+            }
+            
+            drawFullChartWithBronxHighlight(currentScroll, sectionHeight) {
+                // Calculate scroll progress within the remaining section (after zoom back)
+                const zoomEndScroll = sectionHeight * 0.5;
+                const scrollProgress = Math.min(Math.max((currentScroll - zoomEndScroll) / (sectionHeight - zoomEndScroll), 0), 1);
+                
+                // Draw the full chart
+                this.drawFullChartBackground();
+                
+                // Ensure buildings are immediately fully visible
+                this.buildings.forEach(building => {
+                    // Reset building to full height and visibility immediately
+                    building.currentHeight = building.targetHeight;
+                    building.opacity = 1.0;
+                    building.showLabel = true;
+                    this.drawBuilding(building);
+                });
+                
+                // Draw ground line
+                this.ctx.strokeStyle = '#000';
+                this.ctx.lineWidth = 1;
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, this.height - 40);
+                this.ctx.lineTo(this.width, this.height - 40);
+                this.ctx.stroke();
+                
+                // Draw labels for the full chart
+                this.drawLabels();
+                
+                // Don't show chart title and description in zoomed-out chart view
+                if (this.chartTitleElement && this.chartDekElement) {
+                    this.chartTitleElement.style.display = 'none';
+                    this.chartDekElement.style.display = 'none';
+                }
+                
+                // Control text visibility based on scroll progress
+                this.controlZoomBackText(scrollProgress);
+                
+                // No building scroll animation - keep building static
+            }
+            
+            drawFullChartBackground() {
+                // Draw white background
+                this.ctx.fillStyle = '#fff';
+                this.ctx.fillRect(0, 0, this.width, this.height);
+            }
+            
+            resetBuildingsForFullChart() {
+                // Reset all buildings to their full state for the chart view
+                this.buildings.forEach(building => {
+                    building.currentHeight = building.targetHeight;
+                    building.opacity = 1.0;
+                    building.showLabel = true;
+                });
+            }
+            
+
+            
+            drawZoomedBuildingWithScroll(currentScroll, sectionHeight) {
+                // Find Bronx building from the main chart
+                const bronxBuilding = this.buildings.find(b => b.city === 'BRONX');
+                if (!bronxBuilding) return;
+                
+                // Keep building in its original chart position but fully zoomed
+                const buildingX = bronxBuilding.x;
+                const buildingY = bronxBuilding.y - bronxBuilding.currentHeight / 2;
+                
+                // Calculate scroll progress within the remaining section (after zoom)
+                const zoomEndScroll = sectionHeight * 0.6; // Zoom takes up 60% of section height
+                const scrollProgress = Math.min(Math.max((currentScroll - zoomEndScroll) / (sectionHeight - zoomEndScroll), 0), 1);
+                
+                console.log('Scroll progress calculation:', { currentScroll, zoomEndScroll, sectionHeight, scrollProgress });
+                
+                // Apply zoom transformation (fully zoomed)
+                this.ctx.save();
+                this.ctx.translate(buildingX, buildingY);
+                this.ctx.scale(8.0, 8.0); // Keep fully zoomed
+                this.ctx.translate(-buildingX, -buildingY);
+                
+                // No vertical scroll effect - keep building static
+                
+                // Draw the actual Bronx building from the chart
+                this.drawBuilding(bronxBuilding);
+                
+                this.ctx.restore();
+                
+                // Add window highlight and quote AFTER restoring the context (in global coordinates)
+                // Show window highlight and quote when zoom is complete
+                if (scrollProgress > 0.2) { // Show when zoom is mostly complete
+                    console.log('Drawing window highlight and quote, scrollProgress:', scrollProgress);
+                    this.drawWindowHighlight(bronxBuilding);
+                    this.drawQuote(scrollProgress);
+                    
+                    // Draw the building details text directly on canvas
+                    this.drawBuildingDetailsText();
+                }
+            }
+            
+            drawWindowHighlight(building) {
+                console.log('drawWindowHighlight called');
+                // Draw a thin outline rectangle around a random window
+                // Since the building is zoomed 8x, we need to scale the coordinates
+                const scale = 8.0;
+                const windowX = building.x - (building.width * scale) / 2 + (15 * scale); // Left column, second window
+                const windowY = building.y - (building.currentHeight * scale) / 2 + (35 * scale); // Second row
+                const windowSize = 8 * scale;
+                
+                console.log('Window highlight coordinates:', { windowX, windowY, windowSize });
+                
+                // Small thin outline rectangle around the window
+                this.ctx.strokeStyle = '#000000';
+                this.ctx.lineWidth = 1;
+                this.ctx.strokeRect(windowX - 3, windowY - 3, windowSize + 6, windowSize + 6);
+            }
+            
+            drawQuote(scrollProgress) {
+                console.log('drawQuote called with scrollProgress:', scrollProgress);
+                // Draw the quote on the right side of the zoomed building
+                const quoteX = 700; // Positioned to the right of the building
+                const quoteY = 200; // Positioned above the building details
+                
+                // No fade - show immediately when called
+                this.ctx.globalAlpha = 1.0;
+                
+                console.log('Quote showing immediately');
+                
+                // Quote text with normal formatting
+                this.ctx.fillStyle = '#000';
+                this.ctx.textAlign = 'left';
+                this.ctx.font = '16px Arial'; // Normal font size and weight
+                
+                const quote = "There's only one elevator. When it's broken, that's it,";
+                const attribution = "said Iris Figueras, 48, a tenant in apartment 3C and an office manager for State Assembly member Michael Benedetto in District 82.";
+                
+                // Draw quote with word wrapping
+                this.drawWrappedText(quote, quoteX, quoteY, 400, 25);
+                this.drawWrappedText(attribution, quoteX, quoteY + 80, 400, 25);
+                
+                this.ctx.globalAlpha = 1.0;
+            }
+            
+            showBronxText() {
+                // Show the text content after zoom animation is complete
+                const bronxContent = document.getElementById('bronx-content');
+                if (bronxContent) {
+                    bronxContent.style.opacity = '1';
+                }
+            }
+            
+            drawBuildingDetailsText() {
+                // Draw the building details text directly on the canvas
+                this.ctx.fillStyle = '#000';
+                this.ctx.textAlign = 'left';
+                this.ctx.font = '16px Arial';
+                
+                // Building details text
+                const detailsText = 'In January, at 764 East 152nd Street in the Bronx, seven floors high and 24 residential apartments, tenants waited 146 days for repairs. The building has only one elevator.';
+                
+                // Position text below the building
+                const textX = 50;
+                const textY = 500;
+                
+                // Draw text with word wrapping
+                this.drawWrappedText(detailsText, textX, textY, 600, 20);
+            }
+            
+            drawWrappedText(text, x, y, maxWidth, lineHeight) {
+                const words = text.split(' ');
+                let line = '';
+                let currentY = y;
+                
+                for (let n = 0; n < words.length; n++) {
+                    const testLine = line + words[n] + ' ';
+                    const metrics = this.ctx.measureText(testLine);
+                    const testWidth = metrics.width;
+                    
+                    if (testWidth > maxWidth && n > 0) {
+                        this.ctx.fillText(line, x, currentY);
+                        line = words[n] + ' ';
+                        currentY += lineHeight;
+                    } else {
+                        line = testLine;
+                    }
+                }
+                this.ctx.fillText(line, x, currentY);
+            }
+            
+            controlZoomBackText(scrollProgress) {
+                // Control text visibility during zoom back section
+                const buildingDetails = document.getElementById('building-details');
+                
+                if (!buildingDetails) return;
+                
+                // Always show building details in zoom back section
+                buildingDetails.style.opacity = '1';
+            }
+            
+
+            
+            drawZoomIntoBronx(progress) {
+                // Find Bronx building from the main chart
+                const bronxBuilding = this.buildings.find(b => b.city === 'BRONX');
+                if (!bronxBuilding) return;
+                
+                // Hide chart title and description immediately when zoom starts
+                if (progress > 0 && this.chartTitleElement && this.chartDekElement) {
+                    this.chartTitleElement.style.display = 'none';
+                    this.chartDekElement.style.display = 'none';
+                }
+                
+                // Keep building in its original chart position
+                const buildingX = bronxBuilding.x;
+                const buildingY = bronxBuilding.y - bronxBuilding.currentHeight / 2;
+                
+                // Calculate zoom scale (start from actual size, zoom in much much slower)
+                const startScale = 1.0; // Start from actual building size
+                const endScale = 8.0; // Zoom in even more
+                const currentScale = startScale + (endScale - startScale) * this.easeOutCubic(progress * 0.3); // Much slower zoom
+                
+                // Apply zoom transformation from the building's original position
+                this.ctx.save();
+                this.ctx.translate(buildingX, buildingY);
+                this.ctx.scale(currentScale, currentScale);
+                this.ctx.translate(-buildingX, -buildingY);
+                
+                // Draw the actual Bronx building from the chart (no new building)
+                this.drawBuilding(bronxBuilding);
+                
+                this.ctx.restore();
+                
+                // No text fade - keep it clean
+            }
+            
+            drawAllText() {
+                // No text to draw during zoom - keeping it clean
+            }
+            
+            drawTransitionToCorner(progress) {
+                // Smoothly transition from zoomed building to corner building
+                const centerX = this.width / 2;
+                const centerY = this.height / 2;
+                const cornerX = 30;
+                const cornerY = this.height - 800 - 30;
+                
+                // Interpolate position
+                const currentX = centerX + (cornerX - centerX) * this.easeOutCubic(progress);
+                const currentY = centerY + (cornerY - centerY) * this.easeOutCubic(progress);
+                
+                // Interpolate scale
+                const startScale = 2.5;
+                const endScale = 1.0;
+                const currentScale = startScale + (endScale - startScale) * this.easeOutCubic(progress);
+                
+                // Apply transformation
+                this.ctx.save();
+                this.ctx.translate(currentX, currentY);
+                this.ctx.scale(currentScale, currentScale);
+                this.ctx.translate(-centerX, -centerY);
+                
+                // Draw the building that matches the zoomed version
+                this.drawMatchingCornerBuilding();
+                
+                this.ctx.restore();
+                
+                // No fade - show corner text immediately
+                this.ctx.globalAlpha = 1.0;
+                this.drawCornerText();
+                this.ctx.globalAlpha = 1.0;
+            }
+            
+            drawMatchingCornerBuilding() {
+                // Draw building that matches the actual Bronx building from the chart
+                const buildingWidth = 400;
+                const buildingHeight = 600;
+                const startX = 0;
+                const startY = 0;
+                
+                // Main building outline
+                this.ctx.strokeStyle = '#000';
+                this.ctx.lineWidth = 3;
+                this.ctx.strokeRect(startX, startY, buildingWidth, buildingHeight);
+                
+                // Draw the distinctive Bronx building design: TWO narrow vertical columns with alternating squares
+                // Left column
+                const columnWidth = 60;
+                const columnSpacing = 120;
+                const leftColumnX = startX + (buildingWidth - columnSpacing) / 2;
+                const rightColumnX = leftColumnX + columnSpacing;
+                
+                // Draw left column with alternating black/white squares
+                for (let row = 0; row < 10; row++) {
+                    const y = startY + 25 + row * 55;
+                    const squareSize = 50;
+                    
+                    // Window outline
+                    this.ctx.strokeStyle = '#000';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.strokeRect(leftColumnX, y, squareSize, squareSize);
+                    
+                    // Alternating pattern (black, white, black, white...)
+                    this.ctx.fillStyle = row % 2 === 0 ? '#000' : '#fff';
+                    this.ctx.fillRect(leftColumnX, y, squareSize, squareSize);
+                }
+                
+                // Draw right column with alternating black/white squares
+                for (let row = 0; row < 10; row++) {
+                    const y = startY + 25 + row * 55;
+                    const squareSize = 50;
+                    
+                    // Window outline
+                    this.ctx.strokeStyle = '#000';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.strokeRect(rightColumnX, y, squareSize, squareSize);
+                    
+                    // Alternating pattern (black, white, black, white...)
+                    this.ctx.fillStyle = row % 2 === 0 ? '#000' : '#fff';
+                    this.ctx.fillRect(rightColumnX, y, squareSize, squareSize);
+                }
+                
+                // Bottom entrance rectangles
+                const rectWidth = 80;
+                const rectHeight = 50;
+                const bottomY = startY + buildingHeight;
+                
+                // Left entrance rectangle
+                this.ctx.strokeRect(startX + 40, bottomY, rectWidth, rectHeight);
+                // Right entrance rectangle
+                this.ctx.strokeRect(startX + buildingWidth - rectWidth - 40, bottomY, rectWidth, rectHeight);
+            }
+            
+            drawCornerText() {
+                // No text - just the building
+            }
+            
+
+            
+
+            
+            drawSmoothZoomToBronx() {
+                // Clear canvas
+                this.ctx.clearRect(0, 0, this.width, this.height);
+                this.ctx.fillStyle = '#fff';
+                this.ctx.fillRect(0, 0, this.width, this.height);
+                
+                // Find Bronx building
+                const bronxBuilding = this.buildings.find(b => b.city === 'BRONX');
+                if (!bronxBuilding) return;
+                
+                // Calculate zoom target (center of screen)
+                const targetX = this.width / 2;
+                const targetY = this.height / 2;
+                
+                // Draw zoomed Bronx building
+                this.ctx.save();
+                this.ctx.translate(targetX, targetY);
+                this.ctx.scale(3, 3); // 3x zoom
+                this.ctx.translate(-bronxBuilding.x, -bronxBuilding.y);
+                
+                // Draw enhanced Bronx building
+                this.drawEnhancedBronxBuilding(bronxBuilding);
+                
+                this.ctx.restore();
+                
+                // Draw building details
+                this.drawBronxBuildingDetails();
+            }
+            
+            drawEnhancedBronxBuilding(building) {
+                const x = building.x - building.width / 2;
+                const y = building.y - building.currentHeight;
+                
+                // Enhanced building outline
+                this.ctx.strokeStyle = '#000';
+                this.ctx.lineWidth = 3;
+                this.ctx.strokeRect(x, y, building.width, building.currentHeight);
+                
+                // Draw the distinctive Bronx building design: TWO narrow vertical columns with alternating squares
+                // Left column
+                const columnWidth = 8;
+                const columnSpacing = 12;
+                const leftColumnX = x + 10;
+                const rightColumnX = x + 10 + columnSpacing;
+                
+                // Draw left column with alternating black/white squares
+                for (let row = 0; row < 8; row++) {
+                    const wy = y + 10 + row * 10;
+                    const squareSize = 8;
+                    
+                    // Window outline
+                    this.ctx.strokeStyle = '#000';
+                    this.ctx.lineWidth = 1;
+                    this.ctx.strokeRect(leftColumnX, wy, squareSize, squareSize);
+                    
+                    // Alternating pattern (black, white, black, white...)
+                    this.ctx.fillStyle = row % 2 === 0 ? '#000' : '#fff';
+                    this.ctx.fillRect(leftColumnX, wy, squareSize, squareSize);
+                }
+                
+                // Draw right column with alternating black/white squares
+                for (let row = 0; row < 8; row++) {
+                    const wy = y + 10 + row * 10;
+                    const squareSize = 8;
+                    
+                    // Window outline
+                    this.ctx.strokeStyle = '#000';
+                    this.ctx.lineWidth = 1;
+                    this.ctx.strokeRect(rightColumnX, wy, squareSize, squareSize);
+                    
+                    // Alternating pattern (black, white, black, white...)
+                    this.ctx.fillStyle = row % 2 === 0 ? '#000' : '#fff';
+                    this.ctx.fillRect(rightColumnX, wy, squareSize, squareSize);
+                }
+            }
+            
+            drawBronxBuildingDetails() {
+                // Draw building information text
+                this.ctx.fillStyle = '#000';
+                this.ctx.textAlign = 'center';
+                this.ctx.font = 'bold 16px Arial';
+                this.ctx.fillText('In January, at 764 East 152nd Street in the Bronx, seven floors high and 24 residential apartments, tenants waited 146 days for repairs. The building has only one elevator.', this.width / 2, 80);
+            }
+            
+
+            
+
+
+            drawBuilding(building) {
+                if (building.currentHeight <= 0) return;
+                
+                const x = building.x - building.width / 2;
+                const y = building.y - building.currentHeight;
+                
+                // Always use full opacity - no fading
+                this.ctx.globalAlpha = 1.0;
+                
+                // Main building (white fill)
+                this.ctx.fillStyle = '#fff';
+                this.ctx.fillRect(x, y, building.width, building.currentHeight);
+                
+                // Building outline (black)
+                this.ctx.strokeStyle = '#000';
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeRect(x, y, building.width, building.currentHeight);
+                
+                // Windows (simple black squares)
+                if (building.currentHeight > 60) {
+                    building.windows.forEach(window => {
+                        if (window.y < building.currentHeight - 15) {
+                            this.ctx.fillStyle = window.lit ? '#000' : '#fff';
+                            this.ctx.fillRect(
+                                x + window.x, 
+                                y + window.y, 
+                                window.width, 
+                                window.height
+                            );
+                            // Black outline for windows
+                            this.ctx.strokeStyle = '#000';
+                            this.ctx.lineWidth = 1;
+                            this.ctx.strokeRect(
+                                x + window.x, 
+                                y + window.y, 
+                                window.width, 
+                                window.height
+                            );
+                        }
+                    });
+                }
+                
+                // Reset alpha
+                this.ctx.globalAlpha = 1.0;
+            }
+            
+            drawLabels() {
+                // Hide chart title and dek during title section
+                if (this.currentSection === 'title') {
+                    if (this.chartTitleElement) this.chartTitleElement.style.display = 'none';
+                    if (this.chartDekElement) this.chartDekElement.style.display = 'none';
+                    return;
+                }
+                
+                // Draw chart title and dek during the pure building visualization sections and zoom-back section
+                if (this.currentSection === 'spacer1' || this.currentSection === 'spacer1b' || this.currentSection === 'zoom-back') {
+                    this.drawChartTitle();
+                }
+                
+                // Hide chart title and dek during Bronx zoom, impact section and beyond
+                if (this.currentSection === 'bronx-zoom' || this.currentSection === 'impact' || 
+                    (this.sections.indexOf(this.currentSection) >= this.sections.indexOf('impact') && 
+                     this.sections.indexOf(this.currentSection) !== -1)) {
+                    if (this.chartTitleElement) this.chartTitleElement.style.display = 'none';
+                    if (this.chartDekElement) this.chartDekElement.style.display = 'none';
+                    return;
+                }
+                
+                // Don't draw building labels on the first page - keep it clean
+                // Only draw area labels below the ground line
+                
+                // Draw area labels below the ground line
+                this.drawAreaLabels();
+                
+                this.ctx.globalAlpha = 1.0;
+            }
+            
+            drawChartTitle() {
+                // Create HTML elements for chart title and dek instead of canvas text
+                if (!this.chartTitleElement) {
+                    this.createChartTitleElements();
+                }
+                
+                // Show the HTML elements
+                this.chartTitleElement.style.display = 'block';
+                this.chartDekElement.style.display = 'block';
+            }
+            
+            createChartTitleElements() {
+                // Create chart title element
+                this.chartTitleElement = document.createElement('div');
+                this.chartTitleElement.style.cssText = `
+                    position: fixed;
+                    top: 80px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    font-family: Arial, sans-serif;
+                    font-size: 24px;
+                    font-weight: bold;
+                    color: #000;
+                    text-align: center;
+                    z-index: 100;
+                    pointer-events: auto;
+                    cursor: text;
+                    user-select: text;
+                    line-height: 1.4;
+                    margin-bottom: 15px;
+                `;
+                this.chartTitleElement.textContent = "Where NYC's Elevators Break Down the Most";
+                document.body.appendChild(this.chartTitleElement);
+                
+                // Create chart dek element
+                this.chartDekElement = document.createElement('div');
+                this.chartDekElement.style.cssText = `
+                    position: fixed;
+                    top: 110px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    font-family: Arial, sans-serif;
+                    font-size: 16px;
+                    color: #000;
+                    text-align: center;
+                    z-index: 100;
+                    pointer-events: auto;
+                    cursor: text;
+                    user-select: text;
+                    max-width: 80%;
+                    line-height: 1.8;
+                    margin-top: 10px;
+                `;
+                this.chartDekElement.innerHTML = "More than 6,000 elevator complaints were filed across New York City in 2020.<br>The Bronx alone accounted for over a third of them, with Brooklyn and Manhattan trailing behind.";
+                document.body.appendChild(this.chartDekElement);
+            }
+            
+            drawAreaLabels() {
+                // Only draw area labels when buildings are visible and not in impact section
+                if (this.currentSection === 'impact' || 
+                    (this.sections.indexOf(this.currentSection) >= this.sections.indexOf('impact') && 
+                     this.sections.indexOf(this.currentSection) !== -1)) {
+                    return;
+                }
+                
+                this.ctx.fillStyle = '#000';
+                this.ctx.textAlign = 'center';
+                
+                // Group buildings by borough for better organization
+                const boroughGroups = {};
+                this.buildings.forEach(building => {
+                    if (!boroughGroups[building.borough]) {
+                        boroughGroups[building.borough] = [];
+                    }
+                    boroughGroups[building.borough].push(building);
+                });
+                
+                // Draw borough labels below the ground line
+                Object.keys(boroughGroups).forEach(borough => {
+                    const buildings = boroughGroups[borough];
+                    if (buildings.length === 0) return;
+                    
+                    // Calculate the center position for this borough
+                    const totalX = buildings.reduce((sum, building) => sum + building.x, 0);
+                    const centerX = totalX / buildings.length;
+                    
+                    // Draw borough name below the ground line
+                    this.ctx.font = 'bold 12px Arial';
+                    this.ctx.fillText(borough, centerX, this.height - 20);
+                });
+                
+                // Smart individual area labeling to prevent overlap
+                this.drawSmartAreaLabels();
+            }
+            
+            drawSmartAreaLabels() {
+                // Sort buildings by complaints to prioritize important areas
+                const sortedBuildings = [...this.buildings].sort((a, b) => b.complaints - a.complaints);
+                
+                // Only show labels for areas with significant complaints or major areas
+                const majorAreas = ['BRONX', 'BROOKLYN', 'MANHATTAN'];
+                const significantThreshold = 50; // Only show areas with 50+ complaints
+                
+                const labelsToShow = sortedBuildings.filter(building => 
+                    majorAreas.includes(building.city) || building.complaints >= significantThreshold
+                );
+                
+                // Draw labels with smart positioning to avoid overlap
+                labelsToShow.forEach((building, index) => {
+                    this.ctx.font = '9px Arial';
+                    
+                    // Check if this label would overlap with previous ones
+                    let canShow = true;
+                    const labelWidth = this.ctx.measureText(building.city).width;
+                    const minSpacing = labelWidth + 20; // Minimum space between labels
+                    
+                    for (let i = 0; i < index; i++) {
+                        const prevBuilding = labelsToShow[i];
+                        const distance = Math.abs(building.x - prevBuilding.x);
+                        if (distance < minSpacing) {
+                            canShow = false;
+                            break;
+                        }
+                    }
+                    
+                    if (canShow) {
+                        this.ctx.fillText(building.city, building.x, this.height - 8);
+                    }
+                });
+                
+                // Add a note about what's shown
+                this.ctx.font = '8px Arial';
+                this.ctx.fillStyle = '#666';
+                this.ctx.textAlign = 'left';
+                this.ctx.fillText('Showing major areas and areas with 50+ complaints', 20, this.height - 5);
+            }
+
+            easeOutCubic(t) {
+                return t; // Linear transition - no easing
+            }
+
+            interpolateColor(color1, color2, factor) {
+                const hex1 = color1.replace('#', '');
+                const hex2 = color2.replace('#', '');
+                
+                const r1 = parseInt(hex1.substr(0, 2), 16);
+                const g1 = parseInt(hex1.substr(2, 2), 16);
+                const b1 = parseInt(hex1.substr(4, 2), 16);
+                
+                const r2 = parseInt(hex2.substr(0, 2), 16);
+                const g2 = parseInt(hex2.substr(2, 2), 16);
+                const b2 = parseInt(hex2.substr(4, 2), 16);
+                
+                const r = Math.round(r1 + (r2 - r1) * factor);
+                const g = Math.round(g1 + (g2 - g1) * factor);
+                const b = Math.round(b1 + (b2 - b1) * factor);
+                
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+        }
+
+
+
+        // Initialize visualization
+        window.addEventListener('DOMContentLoaded', () => {
+            // Delay initialization to ensure canvas has proper dimensions
+            setTimeout(() => {
+                const scrollyViz = new ElevatorScrollytelling();
+            }, 100);
+            
+                    // Initialize the interactive complaints duration chart
+        setTimeout(() => {
+            console.log('Starting chart initialization...');
+            
+            // Test if Plotly is available
+            if (typeof Plotly === 'undefined') {
+                console.error('Plotly is not loaded!');
+                return;
+            }
+            console.log('Plotly is available:', Plotly.version);
+            
+            // Test if D3 is available
+            if (typeof d3 === 'undefined') {
+                console.error('D3 is not loaded!');
+                return;
+            }
+            console.log('D3 is available:', d3.version);
+            
+            initializeComplaintsChart();
+        }, 500);
+        });
+        
+        // Interactive Elevator Complaints Duration Chart
+        async function initializeComplaintsChart() {
+            try {
+                console.log('Initializing complaints chart...');
+                
+                // Check if the chart container exists
+                const chartContainer = document.getElementById('complaints-chart');
+                if (!chartContainer) {
+                    console.error('Chart container not found!');
+                    return;
+                }
+                
+                console.log('Chart container found, loading real data...');
+                
+                // Load real data immediately
+                loadRealData();
+                
+            } catch (err) {
+                console.error('Error in initializeComplaintsChart:', err);
+                const chartContainer = document.getElementById('complaints-chart');
+                if (chartContainer) {
+                    chartContainer.innerHTML = 
+                        '<div style="text-align: center; padding: 40px; color: #666;">Error initializing chart: ' + err.message + '</div>';
+                }
+            }
+        }
+        
+        async function loadRealData() {
+            try {
+                console.log('Loading real CSV data...');
+                
+                const response = await fetch('deduped_complaints_with_details - deduped_complaints_with_details.csv.csv');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const csvText = await response.text();
+                console.log('CSV data loaded, length:', csvText.length);
+                
+                // Parse CSV using D3
+                const parsedData = d3.csvParse(csvText);
+                console.log('Parsed CSV data, rows:', parsedData.length);
+                
+                // Filter and process data
+                const chartData = parsedData
+                    .filter(row => row.duration && row.duration !== '0:00:00' && row['Created Date'] && row['Incident Address'])
+                    .map(row => {
+                        const duration = parseDuration(row.duration);
+                        const createdDate = new Date(row['Created Date']);
+                        const address = row['Incident Address'];
+                        
+                        return {
+                            duration: duration,
+                            createdDate: createdDate,
+                            address: address,
+                            borough: row.Borough || 'Unknown',
+                            complaintType: row['Complaint Type'] || 'Unknown',
+                            status: row.Status || 'Unknown'
+                        };
+                    })
+                    .filter(row => row.duration > 0) // Only include valid durations
+                    .sort((a, b) => b.duration - a.duration); // Sort by duration descending
+                
+                console.log('Processed chart data, valid complaints:', chartData.length);
+                
+                if (chartData.length === 0) {
+                    const chartContainer = document.getElementById('complaints-chart');
+                    if (chartContainer) {
+                        chartContainer.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">No valid complaint data found.</div>';
+                    }
+                    return;
+                }
+                
+                createComplaintsChart(chartData);
+                
+            } catch (err) {
+                console.error('Error loading real data:', err);
+                const chartContainer = document.getElementById('complaints-chart');
+                if (chartContainer) {
+                    chartContainer.innerHTML = 
+                        '<div style="text-align: center; padding: 40px; color: #666;">Error loading CSV data: ' + err.message + '</div>';
+                }
+            }
+        }
+        
+        // Parse duration string to hours
+        function parseDuration(durationStr) {
+            if (!durationStr || durationStr === '0:00:00') return 0;
+            
+            const parts = durationStr.split(':');
+            if (parts.length === 3) {
+                // Format: HH:MM:SS
+                const hours = parseInt(parts[0]) || 0;
+                const minutes = parseInt(parts[1]) || 0;
+                const seconds = parseInt(parts[2]) || 0;
+                return hours + (minutes / 60) + (seconds / 3600);
+            } else if (parts.length === 2) {
+                // Format: MM:SS
+                const minutes = parseInt(parts[0]) || 0;
+                const seconds = parseInt(parts[1]) || 0;
+                return (minutes / 60) + (seconds / 3600);
+            }
+            
+            return 0;
+        }
+        
+        // Create Plotly chart
+        function createComplaintsChart(chartData) {
+            if (chartData.length === 0) return;
+            
+            console.log('Creating Plotly chart with', chartData.length, 'data points');
+            
+            // Ensure the chart container is visible and properly sized
+            const chartContainer = document.getElementById('complaints-chart');
+            if (!chartContainer) {
+                console.error('Chart container not found in createComplaintsChart');
+                return;
+            }
+            
+            // Set larger dimensions for better visibility
+            const chartHeight = 600;
+            const chartWidth = 1200;
+            
+            console.log('Chart dimensions:', chartWidth, 'x', chartHeight);
+            
+            // Make sure container is visible
+            chartContainer.style.display = 'block';
+            chartContainer.style.visibility = 'visible';
+            chartContainer.style.opacity = '1';
+            
+            // Prepare data for Plotly - using dots with duration on Y-axis, random X positioning
+            const trace = {
+                x: chartData.map((d, i) => Math.random() * 100), // Random X positions, doesn't matter
+                y: chartData.map(d => d.duration),
+                type: 'scatter',
+                mode: 'markers',
+                marker: {
+                    size: 8,
+                    color: chartData.map(d => {
+                        // Color by borough - soft pastel colors
+                        const colors = {
+                            'BRONX': '#FFB3B3',        // Soft Pastel Red
+                            'BROOKLYN': '#B3FFB3',     // Soft Pastel Green
+                            'MANHATTAN': '#B3B3FF',    // Soft Pastel Blue
+                            'QUEENS': '#FFB3FF',       // Soft Pastel Pink
+                            'STATEN ISLAND': '#FFD9B3'  // Soft Pastel Peach
+                        };
+                        return colors[d.borough] || '#CCCCCC';
+                    }),
+                    line: {
+                        color: '#2c3e50',
+                        width: 1
+                    },
+                    opacity: 0.9
+                },
+                text: chartData.map(d => 
+                    `Duration: ${d.duration.toFixed(1)} hours<br>` +
+                    `Created: ${d.createdDate.toLocaleDateString()}<br>` +
+                    `Address: ${d.address}<br>` +
+                    `Borough: ${d.borough}`
+                ),
+                hoverinfo: 'text',
+                hovertemplate: 
+                    '<b>%{text}</b><br>' +
+                    '<extra></extra>'
+            };
+            
+            const layout = {
+                xaxis: {
+                    showticklabels: false,
+                    showgrid: false,
+                    range: [0, 100],
+                    showtitle: false
+                },
+                yaxis: {
+                    title: 'Duration (hours)',
+                    titlefont: { size: 14, color: '#2c3e50' },
+                    tickfont: { size: 12, color: '#2c3e50' },
+                    showgrid: false,
+                    zeroline: false
+                },
+                plot_bgcolor: '#ffffff',
+                paper_bgcolor: '#ffffff',
+                margin: { l: 80, r: 30, t: 20, b: 60 },
+                height: 600,
+                width: 1200,
+                showlegend: false,
+                hovermode: 'closest'
+            };
+            
+            const config = {
+                responsive: true,
+                displayModeBar: false,
+                displaylogo: false
+            };
+            
+            console.log('Calling Plotly.newPlot...');
+            
+            Plotly.newPlot('complaints-chart', [trace], layout, config).then(() => {
+                console.log('Plotly chart created successfully!');
+                
+                // Force a redraw to ensure visibility
+                Plotly.redraw('complaints-chart');
+                
+                // Check if chart is actually visible
+                const plotlyChart = document.querySelector('#complaints-chart .plotly');
+                if (plotlyChart) {
+                    console.log('Plotly chart element found and visible');
+                } else {
+                    console.log('Plotly chart element not found');
+                }
+            }).catch(err => {
+                console.error('Error creating Plotly chart:', err);
+            });
+            
+            // Handle window resize to maintain fixed dimensions
+            function resizeChart() {
+                if (chartData.length > 0) {
+                    // Keep fixed dimensions for consistent layout
+                    Plotly.relayout('complaints-chart', {
+                        height: 600,
+                        width: 1200
+                    });
+                }
+            }
+            
+            // Listen for window resize
+            window.addEventListener('resize', resizeChart);
+            
+            // Listen for orientation change (mobile devices)
+            window.addEventListener('orientationchange', function() {
+                setTimeout(resizeChart, 100); // Small delay to ensure orientation change is complete
+            });
+            
+            // Initial resize to ensure proper sizing
+            setTimeout(resizeChart, 100);
+            
+            // Add click event for more details
+            document.getElementById('complaints-chart').on('plotly_click', function(data) {
+                const point = data.points[0];
+                const index = point.pointIndex;
+                const complaint = chartData[index];
+                
+                alert(
+                    `Complaint Details:\n\n` +
+                    `Address: ${complaint.address}\n` +
+                    `Duration: ${complaint.duration.toFixed(1)} hours\n` +
+                    `Created Date: ${complaint.createdDate.toLocaleDateString()}\n` +
+                    `Borough: ${complaint.borough}\n` +
+                    `Status: ${complaint.status}\n` +
+                    `Type: ${complaint.complaintType}`
+                );
+            });
+        }
+    </script>
+</body>
+</html>
