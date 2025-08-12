@@ -10,6 +10,15 @@ An interactive visualization of elevator complaint resolution durations across N
 - **Zoom/Pan** via Plotly controls.
 - **Responsive layout:** Standalone page adapts to mobile; scrollytelling pages are fixed-size.
 - **Statistics dashboard (standalone only):** Total complaints, average duration, longest wait, top borough.
+- **Canvas skyline animation:** In scrollytelling pages, buildings are drawn dynamically on an HTML5 `<canvas>` and respond to scroll position.
+  
+## Canvas Building Scroll Animation
+Some pages (`index.html`, `index1.html`) begin with a **city skyline** rendered on a `<canvas>` element.  
+- **Drawing buildings:** Buildings are drawn as rectangles of varying widths and heights, with “windows” represented by smaller filled rectangles.  
+- **Randomized details:** Window patterns are generated randomly per building to create a varied skyline each time.  
+- **Scroll interaction:** As the user scrolls, the animation advances through frames — buildings fade in, highlight, or change based on complaint data.  
+- **Performance:** Uses the 2D canvas API (`this.ctx.fillRect`, `this.ctx.fillStyle`) for efficient rendering.  
+- **Purpose:** Provides visual context and an engaging lead-in to the complaint data story.
 
 ## Data Sources
 - **NYC 311 Service Requests (2010–Present)**  
