@@ -1,100 +1,59 @@
 # NYC Elevator Complaints Duration Chart
 
-An interactive visualization of elevator complaint resolution durations across New York City using Svelte, Plotly.js, and D3.js.
+An interactive visualization of elevator complaint resolution durations across New York City using Svelte (Svelte build only), Plotly.js, and D3.js.
 
 ## Features
+- **Interactive scatter plot:** Each dot represents one complaint; **Y** = duration (hours), **X** = jitter for spacing.
+- **Hover details:** Duration, created date, address, borough, status/type.
+- **Borough color coding** with legend.
+- **Click for details** (popup).
+- **Zoom/Pan** via Plotly controls.
+- **Responsive layout:** Standalone page adapts to mobile; scrollytelling pages are fixed-size.
+- **Statistics dashboard (standalone only):** Total complaints, average duration, longest wait, top borough.
 
-- **Interactive Bar Chart**: Horizontal bar chart showing complaint duration by address
-- **Hover Details**: Rich tooltips showing duration, creation date, address, and borough
-- **Borough Color Coding**: Each borough has a distinct color for easy identification
-- **Click for Details**: Click on any bar to see comprehensive complaint information
-- **Responsive Design**: Works on desktop and mobile devices
-- **Statistics Dashboard**: Summary cards showing key metrics
+## Data Sources
+- **NYC 311 Service Requests (2010–Present)**  
+  Pulled via the [`NYC Open Data`](https://data.cityofnewyork.us/Social-Services/NYC-311-Data/jrb2-thup/about_data)
 
-## Data Source
+- **Manhattan Rent-Stabilized Buildings (2022, PDF)**  
+NYC Rent Guidelines Board: 2022 HCR Building Registration [`(Manhattan)`](https://rentguidelinesboard.cityofnewyork.us/resources/rent-stabilized-building-lists/)  
+We convert the PDF to structured CSV using [`pdfplumber`](https://github.com/jsvine/pdfplumber):
+1. `pdfplumber.open()` → iterate pages  
+2. `.extract_table()` / `.extract_tables()` to capture rows  
+3. Clean and normalize addresses and ZIP codes for merging with 311 data  
 
-The chart visualizes data from `deduped_complaints_with_details - deduped_complaints_with_details.csv.csv`, which contains:
-- Duration of elevator complaints
-- Creation dates
-- Addresses
-- Borough information
-- Complaint types and status
-
-## Installation
-
-1. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
-
-2. **Start Development Server**:
-   ```bash
-   npm run dev
-   ```
-
-3. **Open in Browser**:
-   Navigate to `http://localhost:3000`
-
-## Build for Production
-
-```bash
-npm run build
-```
-
-The built files will be in the `dist` directory.
-
-## How to Use
-
-1. **Hover over bars** to see quick details about each complaint
-2. **Click on any bar** to see comprehensive information in a popup
-3. **Use the chart controls** to zoom, pan, or reset the view
-4. **View statistics** below the chart for key insights
-
-## Chart Features
-
-- **Duration Axis**: X-axis shows resolution time in hours
-- **Address Labels**: Y-axis shows building addresses
-- **Color Legend**: Borough-based color coding
-- **Interactive Elements**: Hover effects and click events
-- **Responsive Layout**: Adapts to different screen sizes
+## Data Files
+All input and derived files are stored in this repository:  
+**[311_project/data](https://github.com/chilinhhovo/311_project/tree/main)**
 
 ## Data Processing
+- Filter out invalid/zero durations
+- Parse duration strings into hours
+- Sort by duration (longest first)
+- Use fuzzymatch to match the addresses (a few attempts)
+- Filter for rent-stabilized buildings
+- Pivot tables
 
-The application:
-- Filters out invalid duration entries
-- Converts duration strings to hours
-- Sorts complaints by duration (longest first)
-- Groups by borough for color coding
-- Provides hover and click interactions
+## Design + code
+- Figma mockup
+- Meeting with advisor
+- Design decided: use mostly black/ white, I wanted to keep it minimal and create an elevating feeling of the elevators
+- Maybe a bit of being 'stuck' via scrolling to create this annoying feeling of being stuck in an elevator
+  
+## How to Run
 
-## Technologies Used
+### Svelte/Vite Version (Svelte build only)
+```bash
+npm install
+npm run dev
+# Open http://localhost:3000
 
-- **Svelte**: Modern reactive framework
-- **Plotly.js**: Interactive charting library
-- **D3.js**: Data manipulation and CSV parsing
-- **Vite**: Fast build tool and dev server
+index-chart.html      # Svelte app entry (Svelte version only)
+index.html            # Scrollytelling + Plotly scatter (fixed size)
+index1.html           # Scrollytelling + D3/SVG scatter
+standalone-chart.html # Standalone Plotly chart + stats cards
+src/                  # Svelte components (if using Svelte)
+package.json          # Svelte/Vite dependencies (Svelte build only)
+vite.config.js        # Vite config (Svelte build only)
 
-## File Structure
 
-```
-├── src/
-│   └── App.svelte          # Main Svelte component
-├── index-chart.html        # HTML entry point
-├── package.json            # Dependencies and scripts
-├── vite.config.js          # Vite configuration
-└── README.md               # This file
-```
-
-## Troubleshooting
-
-- **CSV not loading**: Ensure the CSV file is in the correct location
-- **Chart not rendering**: Check browser console for JavaScript errors
-- **Dependencies issues**: Run `npm install` to reinstall packages
-
-## Customization
-
-You can modify the chart by editing `src/App.svelte`:
-- Change colors in the borough color mapping
-- Adjust chart dimensions and margins
-- Modify hover templates and click events
-- Add new chart types or visualizations
